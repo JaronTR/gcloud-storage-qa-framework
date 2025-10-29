@@ -74,14 +74,19 @@ export function cleanupCloudFiles(testDataArray: GcloudTestData[]) {
           console.log(`✅ Successfully cleaned up: ${testData.testId}`);
         }
       } catch (error) {
-        // Only log errors that aren't "file not found" errors (which can happen due to race conditions)
+        // Handle errors gracefully - log permission errors but don't fail
         const errorMessage = error instanceof Error ? error.message : String(error);
         const isFileNotFoundError = 
           errorMessage.includes('404') || 
           errorMessage.includes('not found') ||
           errorMessage.includes('matched no objects');
+        const isPermissionError =
+          errorMessage.includes('403') ||
+          errorMessage.includes('storage.objects.delete');
         
-        if (!isFileNotFoundError) {
+        if (isPermissionError) {
+          console.log(`⚠️  Skipping cleanup for ${testData.testId}: Insufficient permissions (storage.objects.delete required)`);
+        } else if (!isFileNotFoundError) {
           console.log(`⚠️ Cleanup failed for ${testData.testId}: ${errorMessage}`);
         }
         // Silently ignore "file not found" errors - they mean cleanup already happened

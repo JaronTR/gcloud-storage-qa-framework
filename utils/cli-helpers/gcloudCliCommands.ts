@@ -27,7 +27,23 @@ export class GcloudCliCommands extends BaseCliCommand {
     }
     
     if (Array.isArray(commandArguments.cmdFlags)) {
-      parts.push(...commandArguments.cmdFlags);
+      // Filter out impersonate flag when authenticated as service account
+      const flags = commandArguments.cmdFlags.filter(flag => {
+        // When in Docker/CI, we're authenticated as the service account
+        // So remove the impersonate flag
+        if ((process.env.DOCKER || process.env.CI) && flag.startsWith('--impersonate-service-account')) {
+          console.log('   ℹ️  Skipping impersonate flag (already authenticated as service account)');
+          return false;
+        }
+        return true;
+      }).map(flag => {
+        // Replace hardcoded region with environment variable
+        if (flag === '--region=US' && process.env.GCLOUD_BUCKET_REGION) {
+          return `--region=${process.env.GCLOUD_BUCKET_REGION}`;
+        }
+        return flag;
+      });
+      parts.push(...flags);
     }
     
     return parts.join(' ');
