@@ -36,15 +36,17 @@ jobs:
           fi
           
           echo "Running: $TEST_CMD"
+          echo "Authenticating with GCloud..."
           
           docker run \
+            -e DOCKER=true \
+            -e CI=true \
             -e GCLOUD_BUCKET_MAIN="${{ secrets.GCLOUD_BUCKET_MAIN }}" \
             -e GCLOUD_BUCKET_EMPTY="${{ secrets.GCLOUD_BUCKET_EMPTY }}" \
             -e GCLOUD_BUCKET_MOVE_DEST="${{ secrets.GCLOUD_BUCKET_MOVE_DEST }}" \
             -e SERVICE_ACCOUNT="${{ secrets.SERVICE_ACCOUNT }}" \
+            -e SERVICE_ACCOUNT_KEY='${{ secrets.SERVICE_ACCOUNT_KEY }}' \
             -e PROJECT_ID="${{ secrets.PROJECT_ID }}" \
-            -e TEST_GCLOUD_USERNAME="${{ secrets.TEST_GCLOUD_USERNAME }}" \
-            -e TEST_GCLOUD_PASS="${{ secrets.TEST_GCLOUD_PASS }}" \
             -e GCLOUD_BUCKET_REGION="${{ secrets.GCLOUD_BUCKET_REGION }}" \
             -v ${{ github.workspace }}/test-results:/app/test-results \
             -v ${{ github.workspace }}/playwright-report:/app/playwright-report \
