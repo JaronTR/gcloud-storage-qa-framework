@@ -1,19 +1,42 @@
 name: GCloud Storage Tests
 
-on: [push, pull_request]
+on:
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: true
+        type: choice
+        options:
+          - all
+          - ls
+          - cp
+          - mv
+          - sign-url
+        default: 'all'
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Build Docker image
         run: docker build -t gcloud-tests .
       
-      - name: Run tests
+      - name: Run tests in Docker
         run: |
+          # Determine which test to run based on input
+          if [ "${{ github.event.inputs.test_suite }}" = "all" ]; then
+            TEST_CMD="npm run test:all"
+          else
+            TEST_CMD="npm run test:${{ github.event.inputs.test_suite }}"
+          fi
+          
+          echo "Running: $TEST_CMD"
+          
           docker run \
             -e GCLOUD_BUCKET_MAIN="${{ secrets.GCLOUD_BUCKET_MAIN }}" \
             -e GCLOUD_BUCKET_EMPTY="${{ secrets.GCLOUD_BUCKET_EMPTY }}" \
@@ -23,12 +46,15 @@ jobs:
             -e TEST_GCLOUD_USERNAME="${{ secrets.TEST_GCLOUD_USERNAME }}" \
             -e TEST_GCLOUD_PASS="${{ secrets.TEST_GCLOUD_PASS }}" \
             -e GCLOUD_BUCKET_REGION="${{ secrets.GCLOUD_BUCKET_REGION }}" \
-            gcloud-tests
+            -v ${{ github.workspace }}/test-results:/app/test-results \
+            -v ${{ github.workspace }}/playwright-report:/app/playwright-report \
+            gcloud-tests $TEST_CMD
       
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.event.inputs.test_suite }}-${{ github.run_number }}
           path: playwright-report/
+          retention-days: 30
 
