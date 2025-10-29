@@ -40,6 +40,7 @@ Each command includes comprehensive test coverage for both successful operations
 
 ### Assumptions
 -The project will only need to use a single gcloud account & gcloud project - so the sections regarding them weren't built in a way that could be expanded easily
+
 -Only basic test cases were covered in order to keep the repository in a reasonable size.
 There are many more cases that could have been covered as well. (and in a work situation, all relevant test cases would have been covered)
 
