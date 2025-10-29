@@ -8,6 +8,8 @@ export class GcloudCliCommands extends BaseCliCommand {
   }
 
   commandBuilder(commandArguments: GcloudCliClient): string {
+    console.log(`📋 Building ${commandArguments.cmdName} command`);
+    
     const parts: string[] = [];
     
     if (commandArguments.cmdPrefix) {
@@ -27,17 +29,12 @@ export class GcloudCliCommands extends BaseCliCommand {
     }
     
     if (Array.isArray(commandArguments.cmdFlags)) {
-      // Filter out impersonate flag when authenticated as service account
       const flags = commandArguments.cmdFlags.filter(flag => {
-        // When in Docker/CI, we're authenticated as the service account
-        // So remove the impersonate flag
         if ((process.env.DOCKER || process.env.CI) && flag.startsWith('--impersonate-service-account')) {
-          console.log('   ℹ️  Skipping impersonate flag (already authenticated as service account)');
           return false;
         }
         return true;
       }).map(flag => {
-        // Replace hardcoded region with environment variable
         if (flag === '--region=US' && process.env.GCLOUD_BUCKET_REGION) {
           return `--region=${process.env.GCLOUD_BUCKET_REGION}`;
         }
@@ -46,11 +43,21 @@ export class GcloudCliCommands extends BaseCliCommand {
       parts.push(...flags);
     }
     
-    return parts.join(' ');
+    const command = parts.join(' ');
+    console.log(`✅ Command built: ${command}`);
+    return command;
   }
 
   executeGcloudCliCommand(commandArguments: GcloudCliClient): { success: boolean; output?: string; error?: string } {
     const command = this.commandBuilder(commandArguments);
-    return this.executeCLICommand(command);
+    const result = this.executeCLICommand(command);
+    
+    if (result.success) {
+      console.log(`✅ GCloud ${commandArguments.cmdName} command completed successfully`);
+    } else {
+      console.log(`❌ GCloud ${commandArguments.cmdName} command failed`);
+    }
+    
+    return result;
   }
 }

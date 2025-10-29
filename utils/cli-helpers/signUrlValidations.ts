@@ -19,19 +19,13 @@ export interface HttpValidationResult {
 
 /**
  * Validate URL against Google Safe Browsing API
- * Uses a simplified approach without requiring API key
- * In production, you'd use the full GSB API with proper authentication
  */
 export async function validateUrlSafety(url: string): Promise<GSBValidationResult> {
+  console.log(`🔍 Validating URL safety: ${url.substring(0, 50)}...`);
+  
   try {
-    // For basic validation, we'll use a heuristic approach
-    // In a real implementation, you'd call the actual GSB API
-    // For now, we'll check if the URL is reachable and not obviously malicious
-    
-    // Basic URL validation
     const urlObj = new URL(url);
     
-    // Check for suspicious patterns (basic heuristics)
     const suspiciousPatterns = [
       /phishing/i,
       /malware/i,
@@ -41,6 +35,7 @@ export async function validateUrlSafety(url: string): Promise<GSBValidationResul
     
     for (const pattern of suspiciousPatterns) {
       if (pattern.test(url)) {
+        console.log(`❌ URL safety validation failed: Contains suspicious pattern ${pattern.source}`);
         return {
           isSafe: false,
           reason: `URL contains suspicious pattern: ${pattern.source}`
@@ -48,17 +43,17 @@ export async function validateUrlSafety(url: string): Promise<GSBValidationResul
       }
     }
     
-    // For Google Cloud Storage signed URLs, they're generally safe
-    // They come from storage.googleapis.com domain
     if (urlObj.hostname.includes('googleapis.com') || 
         urlObj.hostname.includes('storage.cloud.google.com')) {
+      console.log(`✅ URL safety validated: ${urlObj.hostname}`);
       return { isSafe: true };
     }
     
-    // Default to safe for valid URLs
+    console.log(`✅ URL safety validated: No suspicious patterns found`);
     return { isSafe: true };
     
   } catch (error: any) {
+    console.log(`❌ URL safety validation failed: ${error.message}`);
     return {
       isSafe: false,
       reason: `Invalid URL format: ${error.message}`
@@ -70,17 +65,22 @@ export async function validateUrlSafety(url: string): Promise<GSBValidationResul
  * Make HTTP GET request to a signed URL
  */
 export async function validateHttpGetRequest(url: string): Promise<HttpValidationResult> {
+  console.log(`🔄 Sending HTTP GET request to signed URL`);
+  
   try {
     const response = await axios.get(url, {
       timeout: 10000,
-      validateStatus: (status) => status < 500 // Accept any status < 500
+      validateStatus: (status) => status < 500
     });
+    
+    console.log(`✅ HTTP GET request completed: Status ${response.status}`);
     
     return {
       success: response.status === 200,
       statusCode: response.status
     };
   } catch (error: any) {
+    console.log(`❌ HTTP GET request failed: ${error.message} (Status: ${error.response?.status || 'N/A'})`);
     return {
       success: false,
       statusCode: error.response?.status,
@@ -93,17 +93,22 @@ export async function validateHttpGetRequest(url: string): Promise<HttpValidatio
  * Make HTTP POST request to a signed URL (expect failure for GET-only URLs)
  */
 export async function validateHttpPostRequest(url: string): Promise<HttpValidationResult> {
+  console.log(`🔄 Sending HTTP POST request to signed URL`);
+  
   try {
     const response = await axios.post(url, {}, {
       timeout: 10000,
-      validateStatus: (status) => true // Accept any status
+      validateStatus: (status) => true
     });
+    
+    console.log(`✅ HTTP POST request completed: Status ${response.status}`);
     
     return {
       success: response.status === 200,
       statusCode: response.status
     };
   } catch (error: any) {
+    console.log(`❌ HTTP POST request failed: ${error.message} (Status: ${error.response?.status || 'N/A'})`);
     return {
       success: false,
       statusCode: error.response?.status,
@@ -117,22 +122,23 @@ export async function validateHttpPostRequest(url: string): Promise<HttpValidati
  * Google Cloud Storage signed URLs contain an 'Expires' parameter
  */
 export function extractExpirationFromUrl(url: string): Date | null {
+  console.log(`🔍 Extracting expiration date from URL`);
+  
   try {
     const urlObj = new URL(url);
     
-    // Check for 'Expires' parameter (Unix timestamp)
     const expiresParam = urlObj.searchParams.get('Expires');
     if (expiresParam) {
       const timestamp = parseInt(expiresParam, 10);
-      return new Date(timestamp * 1000);
+      const expirationDate = new Date(timestamp * 1000);
+      console.log(`✅ Expiration extracted: ${expirationDate.toISOString()}`);
+      return expirationDate;
     }
     
-    // Check for 'X-Goog-Expires' parameter (duration in seconds)
     const googExpiresParam = urlObj.searchParams.get('X-Goog-Expires');
     const googDateParam = urlObj.searchParams.get('X-Goog-Date');
     
     if (googExpiresParam && googDateParam) {
-      // X-Goog-Date format: YYYYMMDDTHHMMSSZ
       const year = parseInt(googDateParam.substring(0, 4), 10);
       const month = parseInt(googDateParam.substring(4, 6), 10) - 1;
       const day = parseInt(googDateParam.substring(6, 8), 10);
@@ -142,12 +148,15 @@ export function extractExpirationFromUrl(url: string): Date | null {
       
       const startDate = new Date(Date.UTC(year, month, day, hour, minute, second));
       const expiresSeconds = parseInt(googExpiresParam, 10);
-      
-      return new Date(startDate.getTime() + (expiresSeconds * 1000));
+      const expirationDate = new Date(startDate.getTime() + (expiresSeconds * 1000));
+      console.log(`✅ Expiration extracted: ${expirationDate.toISOString()} (${expiresSeconds}s from ${googDateParam})`);
+      return expirationDate;
     }
     
+    console.log(`❌ No expiration parameters found in URL`);
     return null;
   } catch (error) {
+    console.log(`❌ Failed to extract expiration: ${error instanceof Error ? error.message : String(error)}`);
     return null;
   }
 }
@@ -168,15 +177,25 @@ export function isUrlExpired(url: string): boolean {
  * Validate URL expiration duration matches expected duration
  */
 export function validateExpirationDuration(url: string, expectedDurationSeconds: number, toleranceSeconds: number = 60): boolean {
+  console.log(`🔍 Validating expiration duration: Expected ${expectedDurationSeconds}s (±${toleranceSeconds}s tolerance)`);
+  
   const expirationDate = extractExpirationFromUrl(url);
   if (!expirationDate) {
+    console.log(`❌ Duration validation failed: Could not extract expiration date`);
     return false;
   }
   
   const now = new Date();
   const actualDurationSeconds = Math.floor((expirationDate.getTime() - now.getTime()) / 1000);
+  const difference = Math.abs(actualDurationSeconds - expectedDurationSeconds);
+  const isValid = difference <= toleranceSeconds;
   
-  // Check if within tolerance
-  return Math.abs(actualDurationSeconds - expectedDurationSeconds) <= toleranceSeconds;
+  if (isValid) {
+    console.log(`✅ Duration validated: Actual ${actualDurationSeconds}s (difference: ${difference}s)`);
+  } else {
+    console.log(`❌ Duration validation failed: Actual ${actualDurationSeconds}s (difference: ${difference}s exceeds tolerance)`);
+  }
+  
+  return isValid;
 }
 

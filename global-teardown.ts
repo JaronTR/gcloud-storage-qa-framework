@@ -6,7 +6,6 @@ import { mvHappyFlowTestData, mvErrorStateTestData } from './test-data/mv-test-d
 async function globalTeardown() {
   console.log('\n🧹 Global Teardown: Running once after all tests...');
   
-  // Cleanup all test data from all test files
   const allTestData = [
     ...cpHappyFlowTestData,
     ...cpErrorStateTestData,

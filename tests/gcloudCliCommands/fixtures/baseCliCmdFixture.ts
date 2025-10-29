@@ -1,7 +1,7 @@
 import { test as base, expect, TestInfo } from '@playwright/test';
 import { GcloudCliCommands } from '../../../utils/cli-helpers/gcloudCliCommands';
 import { GcloudTestData } from '../../../utils/cli-helpers/gcloudTestData';
-import { BaseTestFixture } from '../../fixtures/BaseTestFixture';
+import { BaseTestFixture } from '../../BaseTestFixture';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
@@ -10,55 +10,82 @@ const DOWNLOADED_FILES_DIR = './test-data/local-files/downloaded-files/';
 
 export function ensureDownloadedFilesDir() {
   if (!fs.existsSync(DOWNLOADED_FILES_DIR)) {
+    console.log(`📁 Creating downloaded files directory: ${DOWNLOADED_FILES_DIR}`);
     fs.mkdirSync(DOWNLOADED_FILES_DIR, { recursive: true });
+    console.log(`✅ Downloaded files directory created`);
+  } else {
+    console.log(`✅ Downloaded files directory already exists: ${DOWNLOADED_FILES_DIR}`);
   }
 }
 
 export function cleanupDownloadedFiles() {
+  console.log(`🧹 Cleaning up downloaded files from ${DOWNLOADED_FILES_DIR}`);
+  
   if (fs.existsSync(DOWNLOADED_FILES_DIR)) {
     const files = fs.readdirSync(DOWNLOADED_FILES_DIR);
+    
+    if (files.length === 0) {
+      console.log(`✅ No downloaded files to clean up`);
+      return;
+    }
+    
     for (const file of files) {
       const filePath = path.join(DOWNLOADED_FILES_DIR, file);
       const stat = fs.statSync(filePath);
       if (stat.isFile()) {
         fs.unlinkSync(filePath);
+        console.log(`   ✅ Removed file: ${file}`);
       } else if (stat.isDirectory()) {
         fs.rmSync(filePath, { recursive: true, force: true });
+        console.log(`   ✅ Removed directory: ${file}`);
       }
     }
+    
+    console.log(`✅ Cleanup complete: ${files.length} item(s) removed`);
+  } else {
+    console.log(`✅ Downloaded files directory does not exist, nothing to clean up`);
   }
 }
 
 export function verifyFileExists(destinationPath: string): boolean {
+  console.log(`🔍 Verifying file exists: ${destinationPath}`);
+  
   if (destinationPath.startsWith('gs://')) {
     try {
       const output = execSync(`gcloud storage ls ${destinationPath}`, { stdio: 'pipe' }).toString();
-      return output.includes(destinationPath);
+      const exists = output.includes(destinationPath);
+      if (exists) {
+        console.log(`✅ Cloud file exists: ${destinationPath}`);
+      } else {
+        console.log(`❌ Cloud file not found: ${destinationPath}`);
+      }
+      return exists;
     } catch (error) {
+      console.log(`❌ Cloud file verification failed: ${destinationPath}`);
       return false;
     }
   } else {
-
-    return fs.existsSync(destinationPath);
+    const exists = fs.existsSync(destinationPath);
+    if (exists) {
+      console.log(`✅ Local file exists: ${destinationPath}`);
+    } else {
+      console.log(`❌ Local file not found: ${destinationPath}`);
+    }
+    return exists;
   }
 }
 
 export function cleanupCloudFiles(testDataArray: GcloudTestData[]) {
   for (const testData of testDataArray) {
-    // Skip cleanup for tests that are expected to fail (they don't create files)
     if (testData.expectedSuccess === false) {
       continue;
     }
 
     if (testData.commandArguments.destinationPath?.startsWith('gs://')) {
       try {
-        // Check if the destination file exists immediately before cleanup
-        // This prevents race conditions when multiple workers clean up simultaneously
         const destinationExists = verifyFileExists(testData.commandArguments.destinationPath);
         
         if (!destinationExists) {
-          // File doesn't exist at destination, nothing to clean up
-          // This is expected for tests with --no-clobber, tests that failed, or already cleaned up by another worker
           continue;
         }
 
@@ -74,7 +101,6 @@ export function cleanupCloudFiles(testDataArray: GcloudTestData[]) {
           console.log(`✅ Successfully cleaned up: ${testData.testId}`);
         }
       } catch (error) {
-        // Handle errors gracefully - log permission errors but don't fail
         const errorMessage = error instanceof Error ? error.message : String(error);
         const isFileNotFoundError = 
           errorMessage.includes('404') || 
@@ -89,7 +115,6 @@ export function cleanupCloudFiles(testDataArray: GcloudTestData[]) {
         } else if (!isFileNotFoundError) {
           console.log(`⚠️ Cleanup failed for ${testData.testId}: ${errorMessage}`);
         }
-        // Silently ignore "file not found" errors - they mean cleanup already happened
       }
     }
   }

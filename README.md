@@ -1,25 +1,40 @@
 # GCloud Storage QA Framework
 
-A comprehensive, enterprise-grade test automation framework for Google Cloud Storage operations, built with Playwright and TypeScript following industry best practices.
+A comprehensive test automation framework for Google Cloud Storage CLI operations, built with Playwright and TypeScript. This framework validates GCloud Storage commands through both happy flow and error state testing, ensuring robust cloud storage operations.
 
-## Features
+## Table of Contents
 
-- ✅ **Modular Architecture**: OOP-based design with clear separation of concerns
-- ✅ **Type-Safe**: Full TypeScript support with strict typing
-- ✅ **Secrets Management**: Environment-based configuration for secure credential handling
-- ✅ **Docker Support**: Containerized execution for CI/CD and local development
-- ✅ **Comprehensive Testing**: Happy flow and error state validation for all GCloud storage commands
-- ✅ **Advanced Validations**: URL safety checks, HTTP request validation, and expiration duration testing
-- ✅ **Playwright Best Practices**: Fixture composition, test annotations, and proper async/await patterns
-- ✅ **Optimized Performance**: Parallel test execution with 4 workers (73% faster than sequential)
-- ✅ **Centralized Test Expectations**: ExpectedOutputs class for maintainable output validation
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Running Tests via GitHub Actions](#running-tests-via-github-actions)
+- [Test Structure](#test-structure)
+- [Test Data](#test-data)
+- [Extending the Framework](#extending-the-framework)
+- [Troubleshooting](#troubleshooting)
 
-## Supported Commands
+## Overview
+
+This framework provides automated testing for Google Cloud Storage operations including:
 
 - **`ls`** - List buckets and objects
 - **`cp`** - Copy files and objects
-- **`mv`** - Move/rename objects
-- **`sign-url`** - Generate signed URLs with comprehensive validation
+- **`mv`** - Move/rename objects  
+- **`sign-url`** - Generate and validate signed URLs
+
+Each command includes comprehensive test coverage for both successful operations (happy flow) and error handling (error states).
+
+## Features
+
+- **Modular Architecture**: OOP-based design with clear separation of concerns
+- **Type-Safe**: Full TypeScript support with strict typing
+- **Parallel Execution**: 2 workers in CI for optimal performance
+- **Global Setup/Teardown**: Automated test file uploads and cleanup
+- **Docker Support**: Containerized execution for consistent CI/CD
+- **Comprehensive Validation**: URL safety checks, HTTP request validation, expiration testing
+- **Structured Logging**: Detailed execution logs for debugging
+- **Fixture Composition**: Reusable test fixtures following Playwright best practices
 
 ## Architecture
 
@@ -27,356 +42,458 @@ A comprehensive, enterprise-grade test automation framework for Google Cloud Sto
 
 ```
 gcloud-storage-qa-framework/
+├── .github/
+│   └── workflows/
+│       └── manual-docker-tests.yml    # GitHub Actions workflow
 ├── config/
-│   └── SecretsManager.ts          # Centralized secrets management
-├── fixtures/
-│   └── BaseTestFixture.ts          # Base fixture for test metadata
+│   └── SecretsManager.ts              # Centralized secrets management
 ├── tests/
-│   ├── gcloudCliCommands/
-│   │   └── fixtures/               # Command-specific fixtures
-│   │       ├── baseCliCmdFixture.ts
-│   │       ├── lsFixtures.ts
-│   │       ├── cpFixtures.ts
-│   │       ├── mvFixtures.ts
-│   │       └── signUrlFixtures.ts
-│   ├── lsTest.spec.ts
-│   ├── cpTest.spec.ts
-│   ├── mvTest.spec.ts
-│   └── signUrlTest.spec.ts
-├── test-data/                      # Test data definitions
-│   ├── ls-test-data.ts
+│   ├── BaseTestFixture.ts             # Base fixture for test metadata
+│   └── gcloudCliCommands/
+│       ├── fixtures/                   # Command-specific fixtures
+│       │   ├── baseCliCmdFixture.ts   # Shared CLI functionality
+│       │   ├── cpFixtures.ts          # Copy command fixtures
+│       │   ├── lsFixtures.ts          # List command fixtures
+│       │   ├── mvFixtures.ts          # Move command fixtures
+│       │   └── signUrlFixtures.ts     # Sign URL fixtures
+│       └── test-suites/                # Test specifications
+│           ├── cpTest.spec.ts
+│           ├── lsTest.spec.ts
+│           ├── mvTest.spec.ts
+│           └── signUrlTest.spec.ts
+├── test-data/                          # Test data definitions
 │   ├── cp-test-data.ts
+│   ├── ls-test-data.ts
 │   ├── mv-test-data.ts
-│   └── sign-url-test-data.ts
+│   ├── sign-url-test-data.ts
+│   └── local-files/                    # Local test files
+│       ├── cp/
+│       ├── mv/
+│       ├── sign-url/
+│       └── downloaded-files/
 ├── utils/
+│   ├── cli-helpers/
+│   │   ├── BaseCliCommand.ts          # Base CLI execution
+│   │   ├── gcloudCliCommands.ts       # GCloud command builder
+│   │   ├── GcloudCliClient.ts         # Command interface
+│   │   ├── gcloudTestData.ts          # Test data interface
+│   │   └── signUrlValidations.ts      # URL validation utilities
 │   ├── commands/
-│   │   ├── CommandType.ts          # Command type enum
-│   │   └── CommandFactory.ts       # Factory pattern for commands
-│   ├── constants/
-│   │   └── clousObjectPaths.ts     # Path and file name constants
-│   ├── BaseCliCommand.ts           # Base CLI execution
-│   ├── gcloudCliCommands.ts        # GCloud command builder
-│   └── signUrlValidations.ts      # URL validation utilities
-├── Dockerfile                      # Multi-stage Docker build
-├── docker-compose.yml              # Docker Compose configuration
-├── .env.example                    # Environment variables template
-└── playwright.config.ts            # Playwright configuration
+│   │   ├── CommandType.ts             # Command type enum
+│   │   └── CommandFactory.ts          # Factory pattern for commands
+│   └── constants/
+│       ├── clousObjectPaths.ts        # Path constants
+│       └── expectedOutputs.ts         # Expected output constants
+├── global-setup.ts                     # Global setup (auth, file uploads)
+├── global-teardown.ts                  # Global teardown (cleanup)
+├── playwright.config.ts                # Playwright configuration
+├── Dockerfile                          # Multi-stage Docker build
+├── docker-compose.yml                  # Docker Compose configuration
+└── package.json                        # Dependencies and scripts
 ```
 
-## Getting Started
+### Design Patterns
 
-### Prerequisites
-
-- Node.js 18.x or higher
-- npm or yarn
-- Google Cloud SDK (for local execution)
-- Docker (optional, for containerized execution)
-- Active GCloud project with storage buckets
-
-### Installation
-
-1. Clone the repository:
-
-```bash
-git clone <repository-url>
-cd gcloud-storage-qa-framework
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Configure environment variables:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your actual credentials:
-
-```env
-GCLOUD_BUCKET_MAIN=gs://your-main-bucket
-GCLOUD_BUCKET_EMPTY=gs://your-empty-bucket
-GCLOUD_BUCKET_MOVE_DEST=gs://your-move-destination-bucket
-SERVICE_ACCOUNT=your-service-account@project.iam.gserviceaccount.com
-PROJECT_ID=your-project-id
-TEST_GCLOUD_USERNAME=your-username
-TEST_GCLOUD_PASS=your-password
-GCLOUD_BUCKET_REGION=US
-```
-
-4. Authenticate with GCloud:
-
-```bash
-gcloud auth login
-gcloud config set project your-project-id
-```
-
-## Running Tests
-
-### Local Execution
-
-Run all tests (optimized with 4 parallel workers):
-
-```bash
-npm run test:all
-```
-
-Run specific test suites:
-
-```bash
-npm run test:ls        # List command tests
-npm run test:cp        # Copy command tests
-npm run test:mv        # Move command tests
-npm run test:sign-url  # Sign URL command tests
-```
-
-Run in headed mode (with browser):
-
-```bash
-npm run test:headed
-```
-
-Debug mode (sequential execution):
-
-```bash
-npm run test:debug
-# Or run with single worker for easier debugging
-npx playwright test tests/ --workers=1
-```
-
-View HTML report:
-
-```bash
-npm run test:report
-```
-
-### Performance
-
-- **Parallel Execution**: 4 workers (local) / 2 workers (CI)
-- **Total Runtime**: ~32 seconds for all 22 tests
-- **Performance Gain**: 73% faster than sequential execution
-- See [PERFORMANCE_OPTIMIZATION.md](PERFORMANCE_OPTIMIZATION.md) for details
-
-### Docker Execution
-
-Build and run tests in Docker:
-
-```bash
-npm run docker:build
-npm run docker:run
-```
-
-Or use Docker Compose directly:
-
-```bash
-docker-compose up
-```
-
-For detailed Docker usage, see [DOCKER.md](DOCKER.md).
-
-## Environment Configuration
-
-### Local Development (.env)
-
-When running tests locally, the framework automatically loads secrets from a `.env` file in the project root. This file is gitignored and should never be committed.
-
-### Docker/CI Environment
-
-When running in Docker (with `DOCKER=true` or `CI=true` environment variables), the framework uses environment variables directly without loading `.env`. This is the recommended approach for CI/CD pipelines.
-
-## Test Structure
-
-### Test Data
-
-Test data is organized into separate files for each command:
-
-- **Happy Flow Tests**: Validate successful command execution
-- **Error State Tests**: Validate proper error handling
-
-Example test data structure:
-
-```typescript
-import { GcloudCommandType } from '../utils/commands/CommandType';
-
-export const cpHappyFlowTestData: GcloudTestData[] = [
-  {
-    testId: 'CP-001',
-    description: 'Copy a local file to a bucket',
-    commandArguments: {
-      cmdPrefix: 'gcloud storage',
-      cmdName: GcloudCommandType.CP,
-      sourcePath: LocalPaths.LOCAL_FILE_CP_001,
-      destinationPath: `${BucketPaths.TESTING_HOMETASK_BUCKET}/uploaded-file.json`
-    },
-    expectedSuccess: true
-  }
-];
-```
-
-### Fixtures
-
-The framework uses Playwright's fixture system with composition:
-
-1. **BaseTestFixture**: Pure test utilities (logging, annotations, attachments)
-2. **baseCliCmdFixture**: CLI-specific functionality (execution, cleanup, validation)
-3. **Command-specific fixtures**: Inherit from base fixtures and add command-specific logic
-
-## CI/CD Integration
-
-### GitHub Actions
-
-The repository includes a GitHub Actions workflow that:
-
-1. Builds the Docker image on every push/PR
-2. Runs all tests with secrets from GitHub repository settings
-3. Uploads test results as artifacts
-
-### Required GitHub Secrets
-
-Configure these secrets in your GitHub repository settings (Settings → Secrets and variables → Actions):
-
-- `GCLOUD_BUCKET_MAIN`
-- `GCLOUD_BUCKET_EMPTY`
-- `GCLOUD_BUCKET_MOVE_DEST`
-- `SERVICE_ACCOUNT`
-- `PROJECT_ID`
-- `TEST_GCLOUD_USERNAME`
-- `TEST_GCLOUD_PASS`
-- `GCLOUD_BUCKET_REGION`
-
-## Design Patterns
-
-### Singleton Pattern
-
-`SecretsManager` uses the singleton pattern to ensure a single instance manages all secrets:
+#### Singleton Pattern
+`SecretsManager` ensures a single instance manages all environment secrets:
 
 ```typescript
 const secrets = SecretsManager.getInstance();
 const bucket = secrets.getBucket('MAIN');
 ```
 
-### Factory Pattern
-
+#### Factory Pattern
 `CommandFactory` creates command instances based on type:
 
 ```typescript
 const command = CommandFactory.createCommand(GcloudCommandType.CP);
 ```
 
-### Fixture Composition
-
+#### Fixture Composition
 Fixtures are composed to separate concerns:
 
-```typescript
-BaseTestFixture (test metadata)
+```
+BaseTestFixture (test metadata, logging, annotations)
     ↓
-baseCliCmdFixture (CLI execution)
+baseCliCmdFixture (CLI execution, validation, cleanup)
     ↓
-Command-specific fixtures (command logic)
+Command-specific fixtures (command-specific logic)
 ```
 
-## Best Practices
+## Prerequisites
 
-### TypeScript
+### Required IAM Permissions
 
-- Strict typing enabled
-- Enums for type-safe constants
-- Interfaces for test data structures
+Your service account must have the following IAM role at the **project level**:
 
-### Playwright
+- **Storage Admin** (`roles/storage.admin`)
 
-- Proper use of `testInfo` for annotations
-- Async/await patterns throughout
-- Fixture composition for reusability
+This role provides:
+- Read/write/delete access to objects
+- List buckets and objects
+- Generate signed URLs
+- Full storage management capabilities
 
-### Security
+### Required GCP Resources
 
-- Secrets never hardcoded
-- `.env` file gitignored
-- Environment-based configuration
-- Service account with minimal permissions
+- Active GCP project
+- Three Cloud Storage buckets:
+  - Main bucket (for test operations)
+  - Empty bucket (for empty bucket tests)
+  - Move destination bucket (for cross-bucket move operations)
+- Service account with JSON key
+- Service account authenticated at project level
 
-### Testing
+## Running Tests via GitHub Actions
 
-- Clear test IDs and descriptions
-- Comprehensive assertions
-- Cleanup after each test
-- File existence validation
+This framework is designed to run tests remotely via GitHub Actions. Follow these steps to set up and execute tests.
+
+### Step 1: Configure GitHub Repository Secrets
+
+Navigate to your GitHub repository settings:
+
+**Settings → Secrets and variables → Actions → New repository secret**
+
+Configure the following secrets:
+
+| Secret Name | Description | Example Value |
+|------------|-------------|---------------|
+| `GCLOUD_BUCKET_MAIN` | Main test bucket | `gs://my-test-bucket` |
+| `GCLOUD_BUCKET_EMPTY` | Empty bucket for testing | `gs://my-empty-bucket` |
+| `GCLOUD_BUCKET_MOVE_DEST` | Destination bucket for move tests | `gs://my-move-dest-bucket` |
+| `SERVICE_ACCOUNT` | Service account email | `test-sa@project.iam.gserviceaccount.com` |
+| `SERVICE_ACCOUNT_KEY` | Service account JSON key | `{"type":"service_account",...}` |
+| `PROJECT_ID` | GCP project ID | `my-gcp-project` |
+| `GCLOUD_BUCKET_REGION` | Bucket region | `US` or `EU` or `ASIA` |
+
+#### How to Get Service Account Key JSON
+
+1. Go to [GCP Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+2. Select your service account
+3. Go to **Keys** tab
+4. Click **Add Key → Create new key**
+5. Choose **JSON** format
+6. Download the key file
+7. Copy the entire contents of the JSON file into the `SERVICE_ACCOUNT_KEY` secret
+
+### Step 2: Grant IAM Permissions
+
+Grant the **Storage Admin** role to your service account at the **project level**:
+
+```bash
+gcloud projects add-iam-policy-binding YOUR-PROJECT-ID \
+  --member="serviceAccount:YOUR-SERVICE-ACCOUNT@YOUR-PROJECT.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+```
+
+Or via [GCP Console → IAM & Admin → IAM](https://console.cloud.google.com/iam-admin/iam):
+
+1. Click **Grant Access**
+2. Add your service account email
+3. Select role: **Storage Admin**
+4. Ensure **Resource** is set to **Project** (not a specific bucket)
+5. Click **Save**
+
+### Step 3: Manually Trigger Workflow
+
+1. Go to your repository on GitHub
+2. Click **Actions** tab
+3. Select **GCloud Storage Tests** workflow
+4. Click **Run workflow** button (right side)
+5. Select test suite to run:
+   - `all` - Run all 22 tests
+   - `ls` - Run list command tests only
+   - `cp` - Run copy command tests only
+   - `mv` - Run move command tests only
+   - `sign-url` - Run signed URL tests only
+6. Click **Run workflow**
+
+### Step 4: View Test Results
+
+#### Real-time Logs
+
+1. Click on the running workflow
+2. Click on the **test** job
+3. Expand **Run tests in Docker** step to see live logs
+
+#### Test Artifacts
+
+After the workflow completes:
+
+1. Scroll to the bottom of the workflow run page
+2. Under **Artifacts**, download **playwright-report-{suite}-{run-number}**
+3. Unzip the downloaded file
+4. Open `index.html` in a browser to view the interactive test report
+
+The Playwright HTML report includes:
+- Test execution timeline
+- Individual test results with status
+- Detailed error messages and stack traces
+- Test annotations and metadata
+- Screenshot attachments (if any)
+
+### Workflow Configuration
+
+The GitHub Actions workflow (`.github/workflows/manual-docker-tests.yml`):
+
+- **Trigger**: Manual workflow dispatch
+- **Runner**: Ubuntu latest
+- **Timeout**: 15 minutes
+- **Docker Image**: Built from repository Dockerfile
+- **Test Execution**: Runs in isolated Docker container
+- **Artifacts**: Playwright HTML report (30-day retention)
+- **Parallel Workers**: 2 (optimized for CI)
+
+## Test Structure
+
+### Test Organization
+
+Tests are organized by command type with two categories:
+
+1. **Happy Flow Tests**: Validate successful command execution
+   - Proper command syntax
+   - Valid file paths
+   - Expected successful outputs
+   - File existence verification
+
+2. **Error State Tests**: Validate proper error handling
+   - Invalid arguments
+   - Non-existent files/buckets
+   - Permission errors
+   - Expected failure scenarios
+
+### Test Data Structure
+
+Each test case follows this structure:
+
+```typescript
+{
+  testId: 'CP-001',                    // Unique test identifier
+  description: 'Copy a local file to a bucket',
+  commandArguments: {
+    cmdPrefix: 'gcloud storage',
+    cmdName: GcloudCommandType.CP,
+    sourcePath: './local-file.json',
+    destinationPath: 'gs://bucket/file.json',
+    cmdFlags: ['--no-clobber']         // Optional flags
+  },
+  expectedSuccess: true,               // Expected outcome
+  expectedOutput: 'Copying file'       // Expected output text (optional)
+}
+```
+
+### Test Execution Flow
+
+1. **Global Setup** (`global-setup.ts`)
+   - Authenticates with GCloud using service account key
+   - Creates downloaded files directory
+   - Uploads test files to cloud buckets
+
+2. **Test Execution** (parallel with 2 workers)
+   - Builds GCloud CLI command
+   - Executes command via `execSync`
+   - Validates output/errors
+   - Verifies file operations
+   - Performs additional validations (for sign-url tests)
+
+3. **Global Teardown** (`global-teardown.ts`)
+   - Cleans up cloud files
+   - Removes downloaded local files
+   - Restores moved files to original locations
+
+## Test Data
+
+### Test Data Files
+
+Test data is defined in separate files for each command:
+
+- `test-data/cp-test-data.ts` - Copy command test cases
+- `test-data/ls-test-data.ts` - List command test cases
+- `test-data/mv-test-data.ts` - Move command test cases
+- `test-data/sign-url-test-data.ts` - Sign URL command test cases
+
+### Local Test Files
+
+Local files used in tests are stored in:
+
+- `test-data/local-files/cp/` - Files for copy operations
+- `test-data/local-files/mv/` - Files for move operations
+- `test-data/local-files/sign-url/` - Files for signed URL operations
+- `test-data/local-files/downloaded-files/` - Downloaded files (created during tests)
+
+### Cloud Test Files
+
+The framework automatically uploads required test files to your cloud bucket during global setup. Files are uploaded only if they don't already exist.
+
+## Extending the Framework
+
+### Adding a New Test Case
+
+1. **Add test data** to the appropriate file (e.g., `cp-test-data.ts`):
+
+```typescript
+export const cpHappyFlowTestData: GcloudTestData[] = [
+  // ... existing tests
+  {
+    testId: 'CP-009',
+    description: 'Your new test description',
+    commandArguments: {
+      cmdPrefix: 'gcloud storage',
+      cmdName: GcloudCommandType.CP,
+      sourcePath: './source-file.json',
+      destinationPath: 'gs://bucket/dest-file.json'
+    },
+    expectedSuccess: true
+  }
+];
+```
+
+2. **Create local test file** (if needed) in `test-data/local-files/{command}/`
+
+3. **Run tests** via GitHub Actions to verify
+
+### Adding a New Command
+
+1. **Add command type** to `utils/commands/CommandType.ts`:
+
+```typescript
+export enum GcloudCommandType {
+  LS = 'ls',
+  CP = 'cp',
+  MV = 'mv',
+  SIGN_URL = 'sign-url',
+  RM = 'rm'  // New command
+}
+```
+
+2. **Create test data file**: `test-data/rm-test-data.ts`
+
+3. **Create fixtures**: `tests/gcloudCliCommands/fixtures/rmFixtures.ts`
+
+4. **Create test spec**: `tests/gcloudCliCommands/test-suites/rmTest.spec.ts`
+
+5. **Add cleanup logic** to `global-teardown.ts` if needed
+
+6. **Update package.json** with new test script:
+
+```json
+"test:rm": "playwright test tests/gcloudCliCommands/test-suites/rmTest.spec.ts"
+```
 
 ## Troubleshooting
 
-### Authentication Issues
+### All Tests Failing with Authentication Error
 
-```bash
-# Re-authenticate with gcloud
-gcloud auth login
-gcloud auth application-default login
+**Error**: `You do not currently have an active account selected`
 
-# Verify authentication
-gcloud auth list
-```
+**Solution**: 
+- Verify `SERVICE_ACCOUNT_KEY` secret is correctly configured
+- Ensure the JSON key is valid and not expired
+- Check that the service account exists in your GCP project
 
-### Permission Errors
+### Tests Fail: "Insufficient permissions (storage.objects.delete required)"
 
-Ensure your service account has these IAM roles:
+**Error**: `HTTPError 403: ... does not have storage.objects.delete access`
 
-- `Storage Object Viewer`
-- `Storage Object Creator`
-- `Storage Object Admin` (for sign-url)
+**Solution**:
+- Grant **Storage Admin** role at the **project level** (not bucket level)
+- Wait 2-3 minutes for IAM changes to propagate
+- Re-run the workflow
 
-### Environment Variable Issues
+### Test LS-001 Fails: "List all accessible buckets"
 
-Verify environment variables are loaded:
+**Error**: Test expects `true` but receives `false`
 
-```typescript
-// In your test or utility file
-console.log('GCLOUD_BUCKET_MAIN:', process.env.GCLOUD_BUCKET_MAIN);
-```
+**Solution**:
+- Ensure **Storage Admin** role is granted at **project level**
+- Bucket-level permissions are insufficient for listing all buckets
+- Verify with: `gcloud projects get-iam-policy YOUR-PROJECT-ID`
 
-### Docker Issues
+### Move (MV) Tests Fail
 
-See [DOCKER.md](DOCKER.md) for comprehensive Docker troubleshooting.
+**Error**: `Command failed: gcloud storage mv ...`
+
+**Solution**:
+- Ensure source files exist in the bucket
+- Check that **Storage Admin** role includes delete permissions
+- Verify files weren't already moved by a previous test run
+
+### Sign-URL Tests Fail: "IAM Service Account Credentials API disabled"
+
+**Error**: `PERMISSION_DENIED: IAM Service Account Credentials API has not been used`
+
+**Solution**:
+1. Visit the URL provided in the error message
+2. Enable **IAM Service Account Credentials API**
+3. Wait 5 minutes for API enablement to propagate
+4. Re-run tests
+
+### Docker Build Fails
+
+**Error**: `Error response from daemon: ...`
+
+**Solution**:
+- Check Dockerfile syntax
+- Ensure all referenced files exist
+- Verify base image `node:20-bullseye-slim` is accessible
+- Check `.dockerignore` isn't excluding required files
+
+### Workflow Timeout
+
+**Error**: `The job running on runner ... has exceeded the maximum execution time of 15 minutes`
+
+**Solution**:
+- Check for network issues accessing GCP
+- Verify service account authentication is working
+- Increase timeout in `.github/workflows/manual-docker-tests.yml`:
+  ```yaml
+  timeout-minutes: 30
+  ```
+
+### Test Artifacts Not Generated
+
+**Issue**: No Playwright report available after workflow completes
+
+**Solution**:
+- Check that tests actually ran (not just build step)
+- Verify the `playwright-report` directory was created
+- Check workflow logs for artifact upload errors
+- Ensure workflow has `if: always()` on upload step
+
+## Test Coverage
+
+Current test coverage:
+
+| Command | Happy Flow | Error States | Total |
+|---------|-----------|--------------|-------|
+| ls | 3 | 1 | 4 |
+| cp | 3 | 3 | 6 |
+| mv | 3 | 2 | 5 |
+| sign-url | 3 | 4 | 7 |
+| **Total** | **12** | **10** | **22** |
+
+## Performance
+
+- **Total Runtime**: ~55 seconds for all 22 tests
+- **Workers**: 2 parallel workers in CI
+- **Retries**: 2 retries on failure (CI only)
+- **Timeout**: 10 seconds per test
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-
-- Follow existing TypeScript patterns
-- Use Playwright best practices
-- Write clear, descriptive test names
-- Add comments for complex logic
-- Update documentation when adding features
+2. Create a feature branch
+3. Make your changes
+4. Test via GitHub Actions
+5. Submit a pull request
 
 ## License
 
-This project is licensed under the ISC License.
+ISC License
 
 ## Support
 
-For issues, questions, or contributions, please open an issue in the GitHub repository.
-
-## Roadmap
-
-- [ ] Add support for `rm` command
-- [ ] Implement parallel test execution
-- [ ] Add performance benchmarking
-- [ ] Create custom Playwright reporters
-- [ ] Add support for multiple cloud providers
-- [ ] Implement visual regression testing for CLI output
-- [ ] Add API-level testing alongside CLI testing
-
-## Acknowledgments
-
-- Built with [Playwright](https://playwright.dev/)
-- Powered by [TypeScript](https://www.typescriptlang.org/)
-- Cloud operations via [Google Cloud SDK](https://cloud.google.com/sdk)
-
+For issues or questions:
+- Open an issue in the GitHub repository
+- Check existing issues for solutions
+- Review troubleshooting section above
