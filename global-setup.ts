@@ -5,6 +5,7 @@ import * as path from 'path';
 
 async function globalSetup() {
   console.log('\n🚀 Global Setup: Running once before all tests...');
+  console.log(`   Environment: DOCKER=${process.env.DOCKER}, CI=${process.env.CI}`);
   
   // Authenticate gcloud if running in Docker/CI
   if (process.env.DOCKER || process.env.CI) {
@@ -14,6 +15,10 @@ async function globalSetup() {
       const serviceAccount = process.env.SERVICE_ACCOUNT;
       const serviceAccountKey = process.env.SERVICE_ACCOUNT_KEY;
       const projectId = process.env.PROJECT_ID;
+      
+      console.log(`   SERVICE_ACCOUNT: ${serviceAccount ? 'Set' : 'Not set'}`);
+      console.log(`   SERVICE_ACCOUNT_KEY: ${serviceAccountKey ? 'Set (' + serviceAccountKey.length + ' chars)' : 'Not set'}`);
+      console.log(`   PROJECT_ID: ${projectId || 'Not set'}`);
       
       if (serviceAccountKey) {
         // Method 1: Service Account Key (JSON)

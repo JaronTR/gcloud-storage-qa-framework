@@ -29,7 +29,6 @@ COPY . .
 # Set environment for Docker
 ENV DOCKER=true
 ENV CI=true
-ENV NO_COLOR=0
 
 # Default command
 CMD ["npm", "run", "test:all"]
