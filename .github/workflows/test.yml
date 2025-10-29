@@ -1,0 +1,34 @@
+name: GCloud Storage Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker image
+        run: docker build -t gcloud-tests .
+      
+      - name: Run tests
+        run: |
+          docker run \
+            -e GCLOUD_BUCKET_MAIN="${{ secrets.GCLOUD_BUCKET_MAIN }}" \
+            -e GCLOUD_BUCKET_EMPTY="${{ secrets.GCLOUD_BUCKET_EMPTY }}" \
+            -e GCLOUD_BUCKET_MOVE_DEST="${{ secrets.GCLOUD_BUCKET_MOVE_DEST }}" \
+            -e SERVICE_ACCOUNT="${{ secrets.SERVICE_ACCOUNT }}" \
+            -e PROJECT_ID="${{ secrets.PROJECT_ID }}" \
+            -e TEST_GCLOUD_USERNAME="${{ secrets.TEST_GCLOUD_USERNAME }}" \
+            -e TEST_GCLOUD_PASS="${{ secrets.TEST_GCLOUD_PASS }}" \
+            -e GCLOUD_BUCKET_REGION="${{ secrets.GCLOUD_BUCKET_REGION }}" \
+            gcloud-tests
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: playwright-report/
+

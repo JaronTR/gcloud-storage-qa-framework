@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  gcloud-tests:
+    build: .
+    environment:
+      - GCLOUD_BUCKET_MAIN=${GCLOUD_BUCKET_MAIN}
+      - GCLOUD_BUCKET_EMPTY=${GCLOUD_BUCKET_EMPTY}
+      - GCLOUD_BUCKET_MOVE_DEST=${GCLOUD_BUCKET_MOVE_DEST}
+      - SERVICE_ACCOUNT=${SERVICE_ACCOUNT}
+      - PROJECT_ID=${PROJECT_ID}
+      - TEST_GCLOUD_USERNAME=${TEST_GCLOUD_USERNAME}
+      - TEST_GCLOUD_PASS=${TEST_GCLOUD_PASS}
+      - GCLOUD_BUCKET_REGION=${GCLOUD_BUCKET_REGION}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account-key.json
+    volumes:
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+      - ./service-account-key.json:/app/service-account-key.json:ro
+    command: npm run test:all
+

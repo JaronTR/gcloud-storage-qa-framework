@@ -1,0 +1,33 @@
+{
+  "name": "gcloud-storage-qa-framework",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ls": "playwright test tests/lsTest.spec.ts",
+    "test:cp": "playwright test tests/cpTest.spec.ts",
+    "test:mv": "playwright test tests/mvTest.spec.ts",
+    "test:sign-url": "playwright test tests/signUrlTest.spec.ts",
+    "test:all": "playwright test tests/",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "docker:build": "docker build -t gcloud-tests .",
+    "docker:run": "docker-compose up",
+    "docker:test": "docker-compose run gcloud-tests npm run test:all"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.9.2"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "googleapis": "^144.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
