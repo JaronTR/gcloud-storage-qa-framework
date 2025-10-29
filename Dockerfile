@@ -1,5 +1,5 @@
 # Stage 1: Base with system dependencies
-FROM node:20-bullseye-slim as base
+FROM node:20-bullseye-slim AS base
 
 # Install gcloud SDK (latest)
 RUN apt-get update && apt-get install -y \
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Install dependencies (no browser needed for CLI tests)
-FROM base as dependencies
+FROM base AS dependencies
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ COPY package*.json ./
 RUN npm ci --production=false
 
 # Stage 3: Application
-FROM dependencies as app
+FROM dependencies AS app
 
 COPY . .
 
