@@ -144,7 +144,7 @@ This role provides:
 - Service account with JSON key
 - Service account authenticated at project level
 
-### Optional: Google Safe Browsing API
+### Google Safe Browsing API
 
 For enhanced security validation of signed URLs:
 
@@ -161,58 +161,16 @@ For enhanced security validation of signed URLs:
 
 If not configured, the framework will skip GSB validation and continue tests normally.
 
+**Note:** All Prerequisites are already done in the gcloud project, this section is for documentation purposes only.
+
 ## Running Tests via GitHub Actions
 
 This framework is designed to run tests remotely via GitHub Actions. Follow these steps to set up and execute tests.
 
-### Step 1: Configure GitHub Repository Secrets
+**Note:** Normally (in a workplace), I would add instructions for local test runs as well, including the .env parameters (in an environment only exposed to colleagues and relevant members, such as Confluence).
+In this case, I have decided not to, in order to protect the secrets for security purposes.
 
-Navigate to your GitHub repository settings:
-
-**Settings → Secrets and variables → Actions → New repository secret**
-
-Configure the following secrets:
-
-| Secret Name | Description | Example Value |
-|------------|-------------|---------------|
-| `GCLOUD_BUCKET_MAIN` | Main test bucket | `gs://my-test-bucket` |
-| `GCLOUD_BUCKET_EMPTY` | Empty bucket for testing | `gs://my-empty-bucket` |
-| `GCLOUD_BUCKET_MOVE_DEST` | Destination bucket for move tests | `gs://my-move-dest-bucket` |
-| `SERVICE_ACCOUNT` | Service account email | `test-sa@project.iam.gserviceaccount.com` |
-| `SERVICE_ACCOUNT_KEY` | Service account JSON key | `{"type":"service_account",...}` |
-| `PROJECT_ID` | GCP project ID | `my-gcp-project` |
-| `GCLOUD_BUCKET_REGION` | Bucket region | `US` or `EU` or `ASIA` |
-| `GOOGLE_SAFE_BROWSING_API_KEY` | Google Safe Browsing API key (optional) | `AIza...` |
-
-#### How to Get Service Account Key JSON
-
-1. Go to [GCP Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
-2. Select your service account
-3. Go to **Keys** tab
-4. Click **Add Key → Create new key**
-5. Choose **JSON** format
-6. Download the key file
-7. Copy the entire contents of the JSON file into the `SERVICE_ACCOUNT_KEY` secret
-
-### Step 2: Grant IAM Permissions
-
-Grant the **Storage Admin** role to your service account at the **project level**:
-
-```bash
-gcloud projects add-iam-policy-binding YOUR-PROJECT-ID \
-  --member="serviceAccount:YOUR-SERVICE-ACCOUNT@YOUR-PROJECT.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
-```
-
-Or via [GCP Console → IAM & Admin → IAM](https://console.cloud.google.com/iam-admin/iam):
-
-1. Click **Grant Access**
-2. Add your service account email
-3. Select role: **Storage Admin**
-4. Ensure **Resource** is set to **Project** (not a specific bucket)
-5. Click **Save**
-
-### Step 3: Manually Trigger Workflow
+### Step 1: Manually Trigger Workflow
 
 1. Go to your repository on GitHub
 2. Click **Actions** tab
@@ -226,7 +184,7 @@ Or via [GCP Console → IAM & Admin → IAM](https://console.cloud.google.com/ia
    - `sign-url` - Run signed URL tests only
 6. Click **Run workflow**
 
-### Step 4: View Test Results
+### Step 2: View Test Results
 
 #### Real-time Logs
 
