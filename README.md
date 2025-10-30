@@ -38,12 +38,6 @@ Each command includes comprehensive test coverage for both successful operations
 
 ## Architecture
 
-### Assumptions
--The project will only need to use a single gcloud account & gcloud project - so the sections regarding them weren't built in a way that could be expanded easily
-
--Only basic test cases were covered in order to keep the repository in a reasonable size.
-There are many more cases that could have been covered as well. (and in a work situation, all relevant test cases would have been covered)
-
 ### Project Structure
 
 ```
@@ -148,32 +142,91 @@ This role provides:
   - Empty bucket (for empty bucket tests)
   - Move destination bucket (for cross-bucket move operations)
 - Service account with JSON key
-- Service account authenticated at the project level
+- Service account authenticated at project level
 
-### All Prerequisites were already fulfilled in the gcloud project, no need for actual actions
+### Optional: Google Safe Browsing API
+
+For enhanced security validation of signed URLs:
+
+1. Enable Google Safe Browsing API in your GCP project:
+   - Go to [API Library](https://console.cloud.google.com/apis/library/safebrowsing.googleapis.com)
+   - Click **Enable**
+
+2. Create an API key with Safe Browsing API access:
+   - Go to [Credentials](https://console.cloud.google.com/apis/credentials)
+   - Click **Create Credentials → API Key**
+   - Restrict the key to Safe Browsing API
+
+3. Add the API key as `GOOGLE_SAFE_BROWSING_API_KEY` secret in GitHub
+
+If not configured, the framework will skip GSB validation and continue tests normally.
 
 ## Running Tests via GitHub Actions
 
 This framework is designed to run tests remotely via GitHub Actions. Follow these steps to set up and execute tests.
 
-### Step 1: Login with a GitHub account that is a collaborator on this repository
+### Step 1: Configure GitHub Repository Secrets
 
-Credentials were sent via email along with the link to this repository.
+Navigate to your GitHub repository settings:
 
-### Step 2: Manually Trigger Workflow
+**Settings → Secrets and variables → Actions → New repository secret**
 
-1. Click **Actions** tab
-2. Select **GCloud Storage Tests** workflow
-3. Click **Run workflow** button (right side)
-4. Select test suite to run:
+Configure the following secrets:
+
+| Secret Name | Description | Example Value |
+|------------|-------------|---------------|
+| `GCLOUD_BUCKET_MAIN` | Main test bucket | `gs://my-test-bucket` |
+| `GCLOUD_BUCKET_EMPTY` | Empty bucket for testing | `gs://my-empty-bucket` |
+| `GCLOUD_BUCKET_MOVE_DEST` | Destination bucket for move tests | `gs://my-move-dest-bucket` |
+| `SERVICE_ACCOUNT` | Service account email | `test-sa@project.iam.gserviceaccount.com` |
+| `SERVICE_ACCOUNT_KEY` | Service account JSON key | `{"type":"service_account",...}` |
+| `PROJECT_ID` | GCP project ID | `my-gcp-project` |
+| `GCLOUD_BUCKET_REGION` | Bucket region | `US` or `EU` or `ASIA` |
+| `GOOGLE_SAFE_BROWSING_API_KEY` | Google Safe Browsing API key (optional) | `AIza...` |
+
+#### How to Get Service Account Key JSON
+
+1. Go to [GCP Console → IAM & Admin → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+2. Select your service account
+3. Go to **Keys** tab
+4. Click **Add Key → Create new key**
+5. Choose **JSON** format
+6. Download the key file
+7. Copy the entire contents of the JSON file into the `SERVICE_ACCOUNT_KEY` secret
+
+### Step 2: Grant IAM Permissions
+
+Grant the **Storage Admin** role to your service account at the **project level**:
+
+```bash
+gcloud projects add-iam-policy-binding YOUR-PROJECT-ID \
+  --member="serviceAccount:YOUR-SERVICE-ACCOUNT@YOUR-PROJECT.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+```
+
+Or via [GCP Console → IAM & Admin → IAM](https://console.cloud.google.com/iam-admin/iam):
+
+1. Click **Grant Access**
+2. Add your service account email
+3. Select role: **Storage Admin**
+4. Ensure **Resource** is set to **Project** (not a specific bucket)
+5. Click **Save**
+
+### Step 3: Manually Trigger Workflow
+
+1. Go to your repository on GitHub
+2. Click **Actions** tab
+3. Select **GCloud Storage Tests** workflow
+4. Click **Run workflow** button (right side)
+5. Select test suite to run:
    - `all` - Run all 22 tests
    - `ls` - Run list command tests only
    - `cp` - Run copy command tests only
    - `mv` - Run move command tests only
    - `sign-url` - Run signed URL tests only
-5. Click **Run workflow**
+6. Click **Run workflow**
 
-### Step 3: View Test Results
+### Step 4: View Test Results
 
 #### Real-time Logs
 
@@ -251,7 +304,7 @@ Each test case follows this structure:
 
 1. **Global Setup** (`global-setup.ts`)
    - Authenticates with GCloud using service account key
-   - Creates the downloaded files directory
+   - Creates downloaded files directory
    - Uploads test files to cloud buckets
 
 2. **Test Execution** (parallel with 2 workers)
@@ -265,9 +318,6 @@ Each test case follows this structure:
    - Cleans up cloud files
    - Removes downloaded local files
    - Restores moved files to original locations
-
-### Sign-Url tests URL validations 
-Every sign-url happy flow test (where URLs are generated), the tests validate that the generated URL link won't be flagged as a phishing attack using an API request to Google Safe Browsing API.
 
 ## Test Data
 
@@ -447,9 +497,21 @@ Current test coverage:
 - **Retries**: 2 retries on failure (CI only)
 - **Timeout**: 10 seconds per test
 
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test via GitHub Actions
+5. Submit a pull request
+
+## License
+
+ISC License
+
 ## Support
 
 For issues or questions:
 - Open an issue in the GitHub repository
 - Check existing issues for solutions
-- Review the troubleshooting section above
+- Review troubleshooting section above
