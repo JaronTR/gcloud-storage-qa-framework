@@ -16,7 +16,7 @@ A comprehensive test automation framework for Google Cloud Storage CLI operation
 
 ## Overview
 
-This framework provides automated testing for Google Cloud Storage operations including:
+This framework provides automated testing for Google Cloud Storage operations, including:
 
 - **`ls`** - List buckets and objects
 - **`cp`** - Copy files and objects
@@ -276,6 +276,10 @@ Each test case follows this structure:
    - Cleans up cloud files
    - Removes downloaded local files
    - Restores moved files to original locations
+  
+### sign-url Validations
+In order to ensure the generated URLS are not categorized as phishing attacks by google, a request is sent to Google Safe Browsing API to ensure the URL is safe.
+If the URL is categorized as phishing, the test would fail.
 
 ## Test Data
 
