@@ -266,6 +266,9 @@ Each test case follows this structure:
    - Removes downloaded local files
    - Restores moved files to original locations
 
+### Sign-Url tests URL validations 
+Every sign-url happy flow test (where URLs are generated), the tests validate that the generated URL link won't be flagged as a phishing attack using an API request to Google Safe Browsing API.
+
 ## Test Data
 
 ### Test Data Files
