@@ -172,7 +172,7 @@ In this case, I have decided not to, in order to protect the secrets for securit
 
 ### Step 1: Manually Trigger Workflow
 
-1. Go to your repository on GitHub
+1. Login with a GitHub account that is a collaborator to this repository (I have invited the work mail who I've sent this repository link to, if there's a need to add more collaborators, please contact me via jarontr@gmail.com)
 2. Click **Actions** tab
 3. Select **GCloud Storage Tests** workflow
 4. Click **Run workflow** button (right side)
