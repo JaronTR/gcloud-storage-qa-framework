@@ -84,5 +84,15 @@ export class SecretsManager {
     console.log(`✅ Retrieved TEST_GCLOUD_PASS: [REDACTED]`);
     return value;
   }
+  
+  getSafeBrowsingApiKey(): string {
+    const value = process.env.GOOGLE_SAFE_BROWSING_API_KEY;
+    if (!value) {
+      console.log(`❌ Failed to retrieve GOOGLE_SAFE_BROWSING_API_KEY: Not set`);
+      throw new Error('Missing required environment variable: GOOGLE_SAFE_BROWSING_API_KEY');
+    }
+    console.log(`✅ Retrieved GOOGLE_SAFE_BROWSING_API_KEY: [REDACTED]`);
+    return value;
+  }
 }
 

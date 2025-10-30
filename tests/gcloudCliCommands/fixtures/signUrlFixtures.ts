@@ -2,6 +2,7 @@ import { test as base, expect, TestInfo } from '@playwright/test';
 import { GcloudCliCommands } from '../../../utils/cli-helpers/gcloudCliCommands';
 import { SignUrlTestData } from '../../../test-data/sign-url-test-data';
 import { BaseTestFixture } from '../../BaseTestFixture';
+import { SecretsManager } from '../../../config/SecretsManager';
 import {
   validateUrlSafety,
   validateHttpGetRequest,
@@ -34,6 +35,7 @@ function sleep(ms: number): Promise<void> {
 export const signUrlHappyFlowTests = base.extend<SignUrlTestFixtures>({
   happyFlowTest: async ({}, use, testInfo) => {
     const baseFixture = new BaseTestFixture();
+    const secretsManager = SecretsManager.getInstance();
     
     await use(async (testData: SignUrlTestData, testInfoParam: TestInfo) => {
       baseFixture.logTestInfo(testData.testId, testData.description, testInfoParam);
@@ -62,13 +64,27 @@ export const signUrlHappyFlowTests = base.extend<SignUrlTestFixtures>({
           console.log(`\n🔗 Generated signed URL for ${testData.testId}:`);
           console.log(signedUrl);
           
-          baseFixture.logStep('Validating URL safety (GSB check)', 'info');
-          const gsbResult = await validateUrlSafety(signedUrl);
+          baseFixture.logStep('Validating URL safety (Google Safe Browsing API)', 'info');
+          
+          let apiKey: string | undefined;
+          try {
+            apiKey = secretsManager.getSafeBrowsingApiKey();
+          } catch (error) {
+            console.log(`⚠️  Google Safe Browsing API key not configured, skipping security check`);
+            baseFixture.logStep('GSB API key not configured, skipping', 'info');
+          }
+          
+          const gsbResult = await validateUrlSafety(signedUrl, apiKey);
           
           if (!gsbResult.isSafe) {
             throw new Error(`⚠️ URL flagged as unsafe: ${gsbResult.reason}`);
           }
-          baseFixture.logStep('URL passed safety validation', 'success');
+          
+          if (gsbResult.reason && gsbResult.reason.includes('skipped')) {
+            baseFixture.logStep(`URL safety check skipped: ${gsbResult.reason}`, 'info');
+          } else {
+            baseFixture.logStep('URL passed Google Safe Browsing validation', 'success');
+          }
           
           if (testData.expectedDurationSeconds) {
             baseFixture.logStep(`Validating expiration duration (${testData.expectedDurationSeconds}s)`, 'info');

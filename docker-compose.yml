@@ -12,6 +12,7 @@ services:
       - SERVICE_ACCOUNT_KEY=${SERVICE_ACCOUNT_KEY}
       - PROJECT_ID=${PROJECT_ID}
       - GCLOUD_BUCKET_REGION=${GCLOUD_BUCKET_REGION}
+      - GOOGLE_SAFE_BROWSING_API_KEY=${GOOGLE_SAFE_BROWSING_API_KEY}
     volumes:
       - ./test-results:/app/test-results
       - ./playwright-report:/app/playwright-report

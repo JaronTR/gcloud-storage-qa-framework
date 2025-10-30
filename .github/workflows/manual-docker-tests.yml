@@ -48,6 +48,7 @@ jobs:
             -e SERVICE_ACCOUNT_KEY='${{ secrets.SERVICE_ACCOUNT_KEY }}' \
             -e PROJECT_ID="${{ secrets.PROJECT_ID }}" \
             -e GCLOUD_BUCKET_REGION="${{ secrets.GCLOUD_BUCKET_REGION }}" \
+            -e GOOGLE_SAFE_BROWSING_API_KEY="${{ secrets.GOOGLE_SAFE_BROWSING_API_KEY }}" \
             -v ${{ github.workspace }}/test-results:/app/test-results \
             -v ${{ github.workspace }}/playwright-report:/app/playwright-report \
             gcloud-tests $TEST_CMD
